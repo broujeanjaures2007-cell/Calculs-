@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#13293D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Calculs logistique">
+<title>Calculs logistique</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #E8EDF0; --ink: #13293D; --muted: #566878; --card: #FFFFFF; --line: #D2DBE1;
+    --good: #2F8F4E; --bad: #C2492D; --goodbg: #DDF1E3; --badbg: #F8DDD6;
+    --btn: #13293D; --btnfg: #FFFFFF; --focus: #E9A820;
+    --head: 'Avenir Next Condensed','Arial Narrow','Roboto Condensed','Helvetica Neue',sans-serif;
+    --body: 'Avenir Next','Segoe UI','Helvetica Neue',system-ui,sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0F1A24; --ink: #E6EEF4; --muted: #9FB0BF; --card: #18242F; --line: #2B3A48;
+      --good: #5CC47F; --bad: #F08A6E; --goodbg: #1C3A29; --badbg: #44251C;
+      --btn: #E6EEF4; --btnfg: #0F1A24;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); }
+  #app { max-width: 480px; margin: 0 auto; padding: 16px 16px 48px; padding-top: max(16px, env(safe-area-inset-top)); }
+  button, input { font-family: inherit; }
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  h1 { font-family: var(--head); font-size: 40px; line-height: 1.05; margin: 8px 0; }
+  h2.score { font-family: var(--head); font-size: 56px; line-height: 1; margin: 8px 0 4px; }
+  .sub { font-size: 16px; line-height: 1.45; color: var(--muted); margin: 0 0 20px; }
+  .lab { font-size: 15px; font-weight: 700; margin: 20px 0 8px; }
+
+  .list { display: grid; gap: 8px; }
+  .row { display: flex; justify-content: space-between; align-items: center; text-align: left; width: 100%;
+    background: var(--card); color: var(--ink); border: none; border-left: 8px solid var(--ink); border-radius: 6px;
+    padding: 0 14px; min-height: 58px; cursor: pointer; box-shadow: 0 0 0 1px var(--line); }
+  .row.sel { box-shadow: 0 0 0 2px var(--ink); }
+  .rl { font-family: var(--head); font-weight: 700; font-size: 20px; }
+  .rc { font-size: 14px; color: var(--muted); }
+
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg button { min-height: 52px; border-radius: 8px; border: none; background: var(--card); color: var(--ink);
+    box-shadow: 0 0 0 1px var(--line); font-size: 15px; font-weight: 600; cursor: pointer; padding: 0 10px; }
+  .seg button.sel { box-shadow: 0 0 0 2px var(--ink); background: var(--ink); color: var(--bg); }
+
+  .btn { display: block; width: 100%; min-height: 52px; border-radius: 10px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; padding: 0 18px; }
+  .btn.primary { background: var(--btn); color: var(--btnfg); margin-top: 20px; }
+  .btn.ghost { background: var(--card); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); margin-top: 10px; }
+  .link { background: none; border: none; color: var(--ink); font-size: 15px; font-weight: 700; cursor: pointer; min-height: 44px; padding: 0; }
+  .linkm { background: none; border: none; color: var(--muted); font-size: 15px; text-decoration: underline; cursor: pointer; min-height: 44px; padding: 0; }
+
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 15px; color: var(--muted); }
+  .bar { height: 5px; background: var(--line); border-radius: 2px; overflow: hidden; margin-bottom: 16px; }
+  .bar i { display: block; height: 100%; transition: width .3s; }
+
+  /* Bon de calcul : feuille de situation + zone de réponse séparées par une perforation */
+  .sheet { background: var(--card); border-radius: 8px; box-shadow: 0 0 0 1px var(--line); overflow: hidden; }
+  .sheet header { color: #fff; padding: 10px 16px; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .sheet header .t { font-family: var(--head); font-weight: 700; font-size: 21px; line-height: 1.15; }
+  .sheet header .k { font-size: 13px; font-weight: 600; white-space: nowrap; opacity: .95; }
+  .body { padding: 14px 16px 6px; }
+  .ctx { margin: 0 0 8px; font-size: 16px; line-height: 1.45; }
+  dl { margin: 0; }
+  dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-bottom: 1px dotted var(--line); }
+  dl > div:last-child { border-bottom: none; }
+  dt { color: var(--muted); font-size: 15px; }
+  dd { margin: 0; font-weight: 700; font-size: 15px; text-align: right; }
+  .perf { border-top: 2px dashed var(--line); margin: 8px 0 0; }
+  .ask { padding: 16px; }
+  .q { font-size: 19px; font-weight: 700; line-height: 1.3; margin: 0 0 12px; }
+  .inrow { display: flex; align-items: center; gap: 10px; }
+  .inrow input { flex: 1; min-width: 0; height: 56px; font-size: 24px; font-weight: 700; padding: 0 14px; border-radius: 8px;
+    border: 2px solid var(--line); background: var(--bg); color: var(--ink); }
+  .inrow input:disabled { opacity: .7; }
+  .unit { font-size: 15px; color: var(--muted); max-width: 40%; line-height: 1.25; }
+  .err { color: var(--bad); font-size: 14px; min-height: 20px; margin: 6px 0 0; }
+  .hint { background: var(--bg); border-radius: 6px; padding: 10px 12px; font-size: 15px; margin: 4px 0 0; }
+
+  .fb { border-radius: 8px; padding: 12px 14px; margin-top: 12px; border-left: 6px solid; }
+  .fb.ok { background: var(--goodbg); border-color: var(--good); }
+  .fb.ko { background: var(--badbg); border-color: var(--bad); }
+  .fb p { margin: 6px 0 0; font-size: 15px; line-height: 1.4; }
+  .fb ol, .det ol { margin: 8px 0 0; padding-left: 20px; font-size: 15px; line-height: 1.5; }
+  .muted { color: var(--muted); }
+
+  details.res { background: var(--card); border-radius: 6px; box-shadow: 0 0 0 1px var(--line); }
+  details.res summary { list-style: none; display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; min-height: 56px; padding: 8px 12px; cursor: pointer; }
+  details.res summary::-webkit-details-marker { display: none; }
+  details.res.ok .mk { color: var(--good); } details.res.ko .mk { color: var(--bad); }
+  .mk { font-weight: 800; font-size: 18px; }
+  .st { font-size: 15px; font-weight: 700; line-height: 1.25; }
+  .ya { font-size: 15px; color: var(--muted); }
+  .det { padding: 0 14px 14px; font-size: 15px; line-height: 1.45; }
+  .det p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ---------- Thèmes ---------- */
+const CATS = {
+  stock: { label: 'Stocks',               color: '#96590F' },
+  trans: { label: 'Transport',            color: '#1F6E75' },
+  inco:  { label: 'Incoterms et douane',  color: '#2E5E8C' },
+  kpi:   { label: 'Indicateurs',          color: '#6B4A8B' },
+};
+
+/* ---------- Utilitaires ---------- */
+const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+const shuffle = (arr) => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const f = (n, d = 0) => Number(n).toLocaleString('fr-FR', { maximumFractionDigits: d });
+const eur = (n, d = 0) => f(n, d) + ' €';
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- Générateurs d'exercices (les chiffres changent à chaque série) ---------- */
+const GENS = [
+
+  /* ===== STOCKS ===== */
+  { cat: 'stock', make() {
+    const D = pick([3600, 4800, 6000, 7200, 9600, 12000]), S = pick([40, 50, 60, 75, 80]), H = pick([2, 3, 4, 5, 6]);
+    const Q = Math.sqrt(2 * D * S / H);
+    return {
+      title: 'Quantité économique de commande',
+      ctx: 'Un grossiste réapprovisionne un article vendu toute l\'année.',
+      data: [['Demande annuelle', f(D) + ' unités'], ['Coût d\'une commande', eur(S)], ['Coût de possession', eur(H) + ' par unité et par an']],
+      q: 'Quelle est la quantité économique de commande ?', unit: 'unités', answer: Q, tol: 1, dec: 0,
+      hint: 'Q* = √(2 × D × S ÷ H)',
+      steps: [`2 × D × S = 2 × ${f(D)} × ${S} = ${f(2 * D * S)}`, `Divisé par H : ${f(2 * D * S)} ÷ ${H} = ${f(2 * D * S / H, 1)}`, `Racine carrée : Q* ≈ ${f(Q, 1)}, soit environ ${f(Math.round(Q))} unités`],
+    };
+  } },
+
+  { cat: 'stock', make() {
+    const D = pick([3600, 4800, 6000, 7200, 9600]), S = pick([40, 50, 60, 75]), H = pick([2, 3, 4, 5, 6]);
+    const Q = Math.sqrt(2 * D * S / H), oc = (D / Q) * S, hc = (Q / 2) * H, T = Math.sqrt(2 * D * S * H);
+    return {
+      title: 'Coût total à la quantité économique',
+      ctx: 'Même article, même grossiste. On ne compte pas le prix d\'achat des produits.',
+      data: [['Demande annuelle', f(D) + ' unités'], ['Coût d\'une commande', eur(S)], ['Coût de possession', eur(H) + ' par unité et par an']],
+      q: 'Quel est le coût annuel total (commande + possession) si on commande la quantité économique ?', unit: '€', answer: T, tol: 2, dec: 0,
+      hint: 'Coût total = (D ÷ Q) × S + (Q ÷ 2) × H, avec Q = Q*',
+      steps: [`Q* = √(2 × ${f(D)} × ${S} ÷ ${H}) ≈ ${f(Q, 1)}`, `Coût de passation : (D ÷ Q*) × S ≈ ${f(oc, 1)} €`, `Coût de possession : (Q* ÷ 2) × H ≈ ${f(hc, 1)} €`, `Total ≈ ${f(T)} €. À l'optimum les deux coûts sont égaux, donc total = √(2 × D × S × H).`],
+    };
+  } },
+
+  { cat: 'stock', make() {
+    const d = pick([20, 35, 40, 50, 60, 80]), L = rnd(4, 12), SS = pick([50, 80, 100, 150, 200]);
+    return {
+      title: 'Point de commande',
+      ctx: 'Un entrepôt veut savoir à quel niveau de stock relancer une commande.',
+      data: [['Demande moyenne', f(d) + ' unités par jour'], ['Délai d\'approvisionnement', L + ' jours'], ['Stock de sécurité', f(SS) + ' unités']],
+      q: 'À partir de quel niveau de stock faut-il commander ?', unit: 'unités', answer: d * L + SS, tol: 0, dec: 0,
+      hint: 'Point de commande = demande moyenne × délai + stock de sécurité',
+      steps: [`Demande pendant le délai : ${d} × ${L} = ${f(d * L)}`, `Point de commande : ${f(d * L)} + ${SS} = ${f(d * L + SS)} unités`],
+    };
+  } },
+
+  { cat: 'stock', make() {
+    const sig = pick([8, 10, 12, 15, 20, 25]), L = pick([4, 9, 16, 25]), [z, lvl] = pick([[1.65, '95 %'], [2.33, '99 %'], [1.28, '90 %']]);
+    const root = Math.sqrt(L), ss = z * sig * root;
+    return {
+      title: 'Stock de sécurité',
+      ctx: 'Un distributeur vise un taux de service élevé sur un article à demande irrégulière.',
+      data: [['Écart-type de la demande', sig + ' unités par jour'], ['Délai d\'approvisionnement', L + ' jours'], ['Taux de service visé', lvl + ' (z = ' + f(z, 2) + ')']],
+      q: 'Quel stock de sécurité faut-il prévoir ?', unit: 'unités', answer: ss, tol: 1, dec: 0,
+      hint: 'Stock de sécurité = z × σ × √(délai)',
+      steps: [`√${L} = ${root}`, `Stock de sécurité = ${f(z, 2)} × ${sig} × ${root} = ${f(ss, 1)}`, `Soit environ ${f(Math.round(ss))} unités`],
+    };
+  } },
+
+  { cat: 'stock', make() {
+    const CV = pick([480000, 600000, 720000, 900000, 1200000]), SM = pick([40000, 50000, 60000, 75000, 80000, 100000]), R = CV / SM;
+    return {
+      title: 'Rotation du stock',
+      ctx: 'Un responsable logistique analyse la performance de son stock sur l\'année.',
+      data: [['Coût des ventes annuel', eur(CV)], ['Valeur du stock moyen', eur(SM)]],
+      q: 'Quelle est la rotation du stock (nombre de fois par an) ?', unit: 'fois par an', answer: R, tol: 0.1, dec: 1,
+      hint: 'Rotation = coût des ventes annuel ÷ stock moyen',
+      steps: [`${f(CV)} ÷ ${f(SM)} = ${f(R, 2)}`, `Le stock se renouvelle environ ${f(R, 1)} fois par an`],
+    };
+  } },
+
+  { cat: 'stock', make() {
+    const SM = pick([30000, 45000, 60000, 90000]), CV = pick([360000, 540000, 720000, 900000]), cov = 365 * SM / CV;
+    return {
+      title: 'Couverture de stock',
+      ctx: 'Combien de temps le stock actuel permettrait-il de tenir sans réapprovisionnement ?',
+      data: [['Valeur du stock moyen', eur(SM)], ['Consommation annuelle', eur(CV)], ['Année', '365 jours']],
+      q: 'Quelle est la couverture de stock, en jours ?', unit: 'jours', answer: cov, tol: 0.5, dec: 1,
+      hint: 'Couverture = (stock moyen ÷ consommation annuelle) × 365',
+      steps: [`${f(SM)} ÷ ${f(CV)} = ${f(SM / CV, 3)}`, `× 365 = ${f(cov, 1)} jours`],
+    };
+  } },
+
+  { cat: 'stock', make() {
+    const V = pick([60000, 80000, 120000, 150000, 200000]), a = pick([6, 8, 10]), b = pick([4, 5, 6]), c = pick([1, 2]), d = pick([3, 4, 5]);
+    const r = a + b + c + d, cost = V * r / 100;
+    return {
+      title: 'Coût de possession du stock',
+      ctx: 'Le coût de possession regroupe plusieurs postes, tous exprimés en % de la valeur du stock par an.',
+      data: [['Valeur du stock moyen', eur(V)], ['Capital immobilisé', a + ' %'], ['Entrepôt et manutention', b + ' %'], ['Assurance', c + ' %'], ['Obsolescence et casse', d + ' %']],
+      q: 'Quel est le coût annuel de possession de ce stock ?', unit: '€', answer: cost, tol: 1, dec: 0,
+      hint: 'Coût de possession = valeur du stock × taux de possession total',
+      steps: [`Taux total : ${a} + ${b} + ${c} + ${d} = ${r} %`, `Coût : ${f(V)} × ${r} % = ${f(cost)} €`],
+    };
+  } },
+
+  { cat: 'stock', make() {
+    const names = ['A', 'B', 'C', 'D', 'E'];
+    const base = shuffle([rnd(35, 50), rnd(18, 25), rnd(10, 15), rnd(5, 9), rnd(2, 4)]).map((v) => v * 1000);
+    const sorted = [...base].sort((x, y) => y - x), total = base.reduce((s, v) => s + v, 0), top2 = sorted[0] + sorted[1], share = top2 / total * 100;
+    return {
+      title: 'Analyse ABC',
+      ctx: 'Un magasinier classe ses 5 références selon leur valeur de consommation annuelle.',
+      data: names.map((n, k) => ['Article ' + n, eur(base[k])]),
+      q: 'Quelle part de la valeur totale représentent les deux articles les plus chers ?', unit: '%', answer: share, tol: 0.3, dec: 1,
+      hint: 'Part = (valeur des 2 premiers ÷ valeur totale) × 100',
+      steps: [`Valeur totale : ${f(total)} €`, `Deux plus chers : ${f(sorted[0])} + ${f(sorted[1])} = ${f(top2)} €`, `Part : ${f(top2)} ÷ ${f(total)} = ${f(share, 1)} %`],
+    };
+  } },
+
+  { cat: 'stock', make() {
+    const Q = pick([200, 250, 400, 500]), N = pick([6, 8, 10, 12, 15, 20]), D = Q * N, gap = 365 / N;
+    return {
+      title: 'Cadence des commandes',
+      ctx: 'Un acheteur veut planifier ses commandes sur l\'année.',
+      data: [['Demande annuelle', f(D) + ' unités'], ['Quantité commandée à chaque fois', f(Q) + ' unités'], ['Année', '365 jours']],
+      q: 'Combien de jours séparent deux commandes ?', unit: 'jours', answer: gap, tol: 0.5, dec: 1,
+      hint: 'Nombre de commandes N = D ÷ Q, puis intervalle = 365 ÷ N',
+      steps: [`Nombre de commandes : ${f(D)} ÷ ${f(Q)} = ${N} par an`, `Intervalle : 365 ÷ ${N} = ${f(gap, 1)} jours`],
+    };
+  } },
+
+  /* ===== TRANSPORT ===== */
+  { cat: 'trans', make() {
+    const dims = pick([[60, 40, 50], [80, 50, 60], [100, 60, 50], [90, 60, 40], [70, 50, 60]]);
+    const vw = dims[0] * dims[1] * dims[2] / 6000, n = rnd(2, 5), w = Math.round(vw * pick([0.6, 0.8, 1.3, 1.6]));
+    const volT = vw * n, realT = w * n, tax = Math.max(volT, realT);
+    return {
+      title: 'Poids taxable en fret aérien',
+      ctx: 'Une expédition aérienne de colis identiques.',
+      data: [['Nombre de colis', String(n)], ['Dimensions d\'un colis', dims.join(' × ') + ' cm'], ['Poids réel d\'un colis', w + ' kg'], ['Règle IATA', '6 000 cm³ = 1 kg']],
+      q: 'Quel est le poids taxable de l\'expédition ?', unit: 'kg', answer: tax, tol: 0.5, dec: 0,
+      hint: 'Poids taxable = le plus élevé entre poids réel et poids volumétrique',
+      steps: [`Poids volumétrique d'un colis : ${dims.join(' × ')} ÷ 6 000 = ${vw} kg`, `Total volumétrique : ${vw} × ${n} = ${f(volT)} kg`, `Total réel : ${w} × ${n} = ${f(realT)} kg`, `On retient le plus élevé : ${f(tax)} kg`],
+    };
+  } },
+
+  { cat: 'trans', make() {
+    const V = pick([1.2, 1.8, 2.4, 3, 4.2]), vw = V * 333, w = Math.round(vw * pick([0.6, 0.85, 1.2, 1.5]) / 10) * 10, tax = Math.max(w, vw);
+    return {
+      title: 'Poids taxable en groupage routier',
+      ctx: 'Un transporteur de messagerie facture au poids taxable.',
+      data: [['Volume de l\'envoi', f(V, 1) + ' m³'], ['Poids réel', f(w) + ' kg'], ['Règle de conversion', '1 m³ = 333 kg']],
+      q: 'Quel est le poids taxable ?', unit: 'kg', answer: tax, tol: 1, dec: 0,
+      hint: 'Poids taxable = max(poids réel ; volume × 333)',
+      steps: [`Poids volumétrique : ${f(V, 1)} × 333 = ${f(vw, 1)} kg`, `Poids réel : ${f(w)} kg`, `On retient le plus élevé : ${f(tax, 1)} kg`],
+    };
+  } },
+
+  { cat: 'trans', make() {
+    const kg = pick([800, 1200, 1800, 2500, 3200]), m3 = pick([1.5, 2.2, 3, 4.5]), rate = pick([85, 90, 95, 110, 120]);
+    const unit = Math.max(kg / 1000, m3), cost = unit * rate;
+    return {
+      title: 'Fret maritime en groupage (LCL)',
+      ctx: 'Un chargeur expédie une partie de conteneur. Le fret se calcule en unités W/M (1 tonne = 1 m³).',
+      data: [['Poids', f(kg) + ' kg'], ['Volume', f(m3, 1) + ' m³'], ['Tarif', eur(rate) + ' par unité W/M']],
+      q: 'Quel est le montant du fret ?', unit: '€', answer: cost, tol: 1, dec: 1,
+      hint: 'Unités facturées = max(poids en tonnes ; volume en m³), puis × tarif',
+      steps: [`Poids en tonnes : ${f(kg / 1000, 1)} t, volume : ${f(m3, 1)} m³`, `On retient le plus élevé : ${f(unit, 1)} unités`, `Fret : ${f(unit, 1)} × ${rate} = ${f(cost, 1)} €`],
+    };
+  } },
+
+  { cat: 'trans', make() {
+    let data, q, ans, steps, hint;
+    if (Math.random() < 0.5) {
+      const ch = pick([12, 14.4, 15.6, 16.8, 18, 19.2, 21.6]); ans = ch / 24 * 100;
+      data = [['Charge utile du camion', '24 t'], ['Charge transportée', f(ch, 1) + ' t']];
+      q = 'Quel est le taux de remplissage en poids ?';
+      hint = 'Taux = charge transportée ÷ charge utile × 100';
+      steps = [`${f(ch, 1)} ÷ 24 = ${f(ch / 24, 3)}`, `Soit ${f(ans, 1)} %`];
+    } else {
+      const n = rnd(20, 31); ans = n / 33 * 100;
+      data = [['Capacité du camion', '33 palettes'], ['Palettes chargées', String(n)]];
+      q = 'Quel est le taux de remplissage en palettes ?';
+      hint = 'Taux = palettes chargées ÷ capacité × 100';
+      steps = [`${n} ÷ 33 = ${f(n / 33, 3)}`, `Soit ${f(ans, 1)} %`];
+    }
+    return { title: 'Taux de remplissage', ctx: 'Un exploitant suit le remplissage de ses camions.', data, q, unit: '%', answer: ans, tol: 0.2, dec: 1, hint, steps };
+  } },
+
+  { cat: 'trans', make() {
+    const km = pick([300, 400, 500, 600]), conso = pick([28, 30, 32, 35]), P = pick([1.55, 1.6, 1.65, 1.7, 1.75]);
+    const tolls = pick([35, 45, 60, 80]), h = pick([5, 6, 7, 8]), r = pick([25, 28, 30, 32]);
+    const L = km / 100 * conso, fuel = L * P, drv = h * r, tot = fuel + tolls + drv;
+    return {
+      title: 'Coût d\'un trajet en camion',
+      ctx: 'Un transporteur chiffre un aller simple pour son client.',
+      data: [['Distance', km + ' km'], ['Consommation', conso + ' L aux 100 km'], ['Prix du gazole', eur(P, 2) + ' par litre'], ['Péages', eur(tolls)], ['Conducteur', h + ' h à ' + eur(r) + ' de l\'heure']],
+      q: 'Quel est le coût total du trajet ?', unit: '€', answer: tot, tol: 1, dec: 2,
+      hint: 'Coût = carburant + péages + conducteur',
+      steps: [`Carburant : ${km} ÷ 100 × ${conso} = ${f(L, 1)} L, soit ${f(L, 1)} × ${f(P, 2)} = ${f(fuel, 2)} €`, `Conducteur : ${h} × ${r} = ${f(drv)} €`, `Total : ${f(fuel, 2)} + ${tolls} + ${f(drv)} = ${f(tot, 2)} €`],
+    };
+  } },
+
+  /* ===== INCOTERMS ET DOUANE ===== */
+  { cat: 'inco', make() {
+    const exw = rnd(8, 30) * 1000, pre = rnd(5, 12) * 50, exp = rnd(2, 5) * 50, load = rnd(2, 6) * 50, fret = rnd(12, 30) * 100, ass = rnd(6, 25) * 10;
+    const fob = exw + pre + exp + load, cif = fob + fret + ass;
+    return {
+      title: 'Du prix EXW au prix CIF',
+      ctx: 'Un exportateur vend une machine au prix EXW et doit proposer un prix CIF à son client.',
+      data: [['Prix EXW', eur(exw)], ['Pré-acheminement jusqu\'au port', eur(pre)], ['Formalités export', eur(exp)], ['Chargement à bord', eur(load)], ['Fret maritime', eur(fret)], ['Assurance', eur(ass)]],
+      q: 'Quel est le prix CIF ?', unit: '€', answer: cif, tol: 0, dec: 0,
+      hint: 'FOB = EXW + coûts jusqu\'à la mise à bord ; CIF = FOB + fret + assurance',
+      steps: [`FOB : ${f(exw)} + ${f(pre)} + ${f(exp)} + ${f(load)} = ${f(fob)} €`, `CIF : ${f(fob)} + ${f(fret)} + ${f(ass)} = ${f(cif)} €`],
+    };
+  } },
+
+  { cat: 'inco', make() {
+    const cif = pick([12000, 15000, 20000, 25000, 40000]), rate = pick([2.5, 3.7, 4.5, 6.5, 8]);
+    const duty = cif * rate / 100, vat = (cif + duty) * 0.2, tot = duty + vat;
+    return {
+      title: 'Droits de douane et TVA à l\'import',
+      ctx: 'Un importateur dédouane une marchandise. On suppose qu\'il n\'y a aucun autre frais.',
+      data: [['Valeur en douane (CIF)', eur(cif)], ['Droit de douane', f(rate, 1) + ' %'], ['TVA import', '20 %']],
+      q: 'Combien l\'importateur paie-t-il au total en droits de douane et TVA ?', unit: '€', answer: tot, tol: 1, dec: 2,
+      hint: 'Droits = valeur en douane × taux ; la TVA se calcule sur (valeur en douane + droits)',
+      steps: [`Droits : ${f(cif)} × ${f(rate, 1)} % = ${f(duty, 2)} €`, `Base TVA : ${f(cif)} + ${f(duty, 2)} = ${f(cif + duty, 2)} €`, `TVA : ${f(cif + duty, 2)} × 20 % = ${f(vat, 2)} €`, `Total : ${f(duty, 2)} + ${f(vat, 2)} = ${f(tot, 2)} €`],
+    };
+  } },
+
+  { cat: 'inco', make() {
+    const fob = rnd(18, 60) * 1000, fret = rnd(10, 30) * 100, ass = rnd(5, 20) * 10, duty = rnd(10, 40) * 100, port = rnd(5, 15) * 50, qty = pick([100, 200, 250, 400, 500, 800]);
+    const tot = fob + fret + ass + duty + port, unit = tot / qty;
+    return {
+      title: 'Coût de revient unitaire à l\'import',
+      ctx: 'Un acheteur importe un lot de produits en FOB et calcule son coût de revient.',
+      data: [['Prix FOB du lot', eur(fob)], ['Fret maritime', eur(fret)], ['Assurance', eur(ass)], ['Droits de douane', eur(duty)], ['Frais portuaires et transit', eur(port)], ['Quantité', f(qty) + ' unités']],
+      q: 'Quel est le coût de revient d\'une unité ?', unit: '€ par unité', answer: unit, tol: 0.05, dec: 2,
+      hint: 'Coût de revient unitaire = total des coûts ÷ quantité',
+      steps: [`Total : ${f(fob)} + ${f(fret)} + ${f(ass)} + ${f(duty)} + ${f(port)} = ${f(tot)} €`, `Par unité : ${f(tot)} ÷ ${f(qty)} = ${f(unit, 2)} €`],
+    };
+  } },
+
+  /* ===== INDICATEURS ===== */
+  { cat: 'kpi', make() {
+    const T = pick([200, 250, 400, 500]), both = Math.round(T * rnd(80, 92) / 100);
+    const ont = Math.min(T, both + Math.round(T * rnd(3, 6) / 100)), comp = Math.min(T, both + Math.round(T * rnd(3, 6) / 100)), ans = both / T * 100;
+    return {
+      title: 'OTIF',
+      ctx: 'Un client mesure la qualité de service de son fournisseur sur le mois.',
+      data: [['Commandes livrées', f(T)], ['Livrées à temps', f(ont)], ['Livrées complètes', f(comp)], ['Livrées à temps et complètes', f(both)]],
+      q: 'Quel est le taux OTIF ?', unit: '%', answer: ans, tol: 0.2, dec: 1,
+      hint: 'OTIF = commandes à temps ET complètes ÷ commandes livrées × 100',
+      steps: [`Seules comptent les commandes à la fois à temps et complètes : ${f(both)}`, `${f(both)} ÷ ${f(T)} = ${f(both / T, 3)}`, `Soit ${f(ans, 1)} %`],
+    };
+  } },
+
+  { cat: 'kpi', make() {
+    const lines = pick([800, 1000, 1250, 1600, 2000]), out = Math.round(lines * rnd(2, 10) / 100), ans = (lines - out) / lines * 100;
+    return {
+      title: 'Taux de service',
+      ctx: 'Un entrepôt suit les lignes de commande servies depuis le stock.',
+      data: [['Lignes commandées', f(lines)], ['Lignes en rupture', f(out)]],
+      q: 'Quel est le taux de service en lignes ?', unit: '%', answer: ans, tol: 0.2, dec: 1,
+      hint: 'Taux de service = (lignes commandées − lignes en rupture) ÷ lignes commandées × 100',
+      steps: [`Lignes servies : ${f(lines)} − ${f(out)} = ${f(lines - out)}`, `${f(lines - out)} ÷ ${f(lines)} = ${f((lines - out) / lines, 3)}`, `Soit ${f(ans, 1)} %`],
+    };
+  } },
+
+  { cat: 'kpi', make() {
+    const ca = pick([4000, 5000, 8000, 10000, 12000, 20000]), a = pick([30, 40, 50]), b = pick([20, 25, 30]), c = pick([5, 10, 15]);
+    const ct = ca * a / 1000, cs = ca * b / 1000, cg = ca * c / 1000, ans = (a + b + c) / 10;
+    return {
+      title: 'Coût logistique en % du chiffre d\'affaires',
+      ctx: 'Un directeur logistique prépare son bilan annuel.',
+      data: [['Chiffre d\'affaires', f(ca / 1000) + ' M€'], ['Transport', f(ct) + ' k€'], ['Stockage et entrepôt', f(cs) + ' k€'], ['Administration logistique', f(cg) + ' k€']],
+      q: 'Quel est le coût logistique total, en % du chiffre d\'affaires ?', unit: '%', answer: ans, tol: 0.1, dec: 1,
+      hint: 'Part = total des coûts ÷ chiffre d\'affaires × 100 (attention aux unités : k€ et M€)',
+      steps: [`Chiffre d'affaires : ${f(ca / 1000)} M€ = ${f(ca)} k€`, `Coûts : ${f(ct)} + ${f(cs)} + ${f(cg)} = ${f(ct + cs + cg)} k€`, `${f(ct + cs + cg)} ÷ ${f(ca)} = ${f((ct + cs + cg) / ca, 3)}, soit ${f(ans, 1)} %`],
+    };
+  } },
+
+  { cat: 'kpi', make() {
+    const lines = pick([420, 490, 560, 630, 700]), pres = pick([7.5, 8]), non = pick([0.5, 1]), prod = pres - non, ans = lines / prod;
+    return {
+      title: 'Productivité en préparation de commandes',
+      ctx: 'Un préparateur de commandes est suivi sur une journée.',
+      data: [['Lignes préparées', f(lines)], ['Temps de présence', f(pres, 1) + ' h'], ['Temps non productif (pauses, attentes)', f(non, 1) + ' h']],
+      q: 'Quelle est sa productivité par heure productive ?', unit: 'lignes par heure', answer: ans, tol: 0.2, dec: 1,
+      hint: 'Productivité = lignes préparées ÷ (temps de présence − temps non productif)',
+      steps: [`Temps productif : ${f(pres, 1)} − ${f(non, 1)} = ${f(prod, 1)} h`, `${f(lines)} ÷ ${f(prod, 1)} = ${f(ans, 1)} lignes par heure`],
+    };
+  } },
+];
+
+/* ---------- État ---------- */
+const N_EX = 5;
+const S = { screen: 'home', cat: 'all', mode: 'now', list: [], i: 0, cur: '', fb: false, res: [] };
+const app = document.getElementById('app');
+
+function newSeries() {
+  const pool = GENS.filter((g) => S.cat === 'all' || g.cat === S.cat);
+  let order = [];
+  const out = [];
+  for (let k = 0; k < N_EX; k++) {
+    if (!order.length) order = shuffle(pool);
+    const g = order.pop();
+    const ex = g.make(); ex.cat = g.cat;
+    out.push(ex);
+  }
+  S.list = out; S.i = 0; S.cur = ''; S.fb = false; S.res = []; S.screen = 'exo';
+}
+
+const parse = (s) => {
+  const t = String(s).replace(/[\s\u202f\u00a0]/g, '').replace(',', '.');
+  return t === '' ? NaN : Number(t);
+};
+
+/* ---------- Écrans ---------- */
+function steps(ex) { return `<ol>${ex.steps.map((s) => `<li>${s}</li>`).join('')}</ol>`; }
+function expected(ex) { return `<b>${f(ex.answer, ex.dec)} ${ex.unit}</b>`; }
+
+function homeView() {
+  const rows = [['all', 'Tous les thèmes', 'var(--ink)'], ...Object.entries(CATS).map(([k, v]) => [k, v.label, v.color])];
+  const count = (k) => GENS.filter((g) => k === 'all' || g.cat === k).length;
+  return `
+    <h1>Calculs logistique</h1>
+    <p class="sub">Des situations avec des chiffres qui changent à chaque série. Tu calcules, puis tu vérifies.</p>
+    <div class="list" role="radiogroup" aria-label="Thème">
+      ${rows.map(([k, l, c]) => `
+        <button class="row ${S.cat === k ? 'sel' : ''}" role="radio" aria-checked="${S.cat === k}" data-act="setcat" data-v="${k}" style="border-left-color:${c}">
+          <span class="rl">${l}</span><span class="rc">${count(k)} types</span>
+        </button>`).join('')}
+    </div>
+    <p class="lab">Correction</p>
+    <div class="seg" role="radiogroup" aria-label="Moment de la correction">
+      <button class="${S.mode === 'now' ? 'sel' : ''}" role="radio" aria-checked="${S.mode === 'now'}" data-act="setmode" data-v="now">Après chaque exercice</button>
+      <button class="${S.mode === 'later' ? 'sel' : ''}" role="radio" aria-checked="${S.mode === 'later'}" data-act="setmode" data-v="later">À la fin de la série</button>
+    </div>
+    <button class="btn primary" data-act="start">Commencer ${N_EX} exercices</button>`;
+}
+
+function exoView() {
+  const ex = S.list[S.i], c = CATS[ex.cat], r = S.res[S.i], last = S.i + 1 >= S.list.length;
+  let tail;
+  if (S.fb) {
+    const title = r.raw === null ? 'Voici la correction' : (r.ok ? 'Bien joué ✓' : 'Pas tout à fait ✗');
+    tail = `
+      <div class="fb ${r.ok ? 'ok' : 'ko'}" role="status">
+        <b>${title}</b>
+        <p>Réponse attendue : ${expected(ex)} <span class="muted">(± ${f(ex.tol, 2)} accepté)</span></p>
+        ${steps(ex)}
+      </div>
+      <button class="btn primary" data-act="next">${last ? 'Voir le bilan' : 'Exercice suivant'}</button>`;
+  } else {
+    const validate = S.mode === 'later' ? (last ? 'Valider et voir le bilan' : 'Valider et continuer') : 'Valider';
+    const skip = S.mode === 'later' ? 'Passer cet exercice' : 'Je ne sais pas, voir la correction';
+    tail = `
+      <button class="btn primary" data-act="check">${validate}</button>
+      <div style="text-align:center"><button class="linkm" data-act="skip">${skip}</button></div>`;
+  }
+  return `
+    <div class="top"><button class="link" data-act="home">← Accueil</button><span>Exercice ${S.i + 1} / ${S.list.length}</span></div>
+    <div class="bar"><i style="width:${(S.i / S.list.length) * 100}%;background:${c.color}"></i></div>
+    <section class="sheet">
+      <header style="background:${c.color}"><span class="t">${ex.title}</span><span class="k">${c.label}</span></header>
+      <div class="body">
+        <p class="ctx">${ex.ctx}</p>
+        <dl>${ex.data.map(([l, v]) => `<div><dt>${l}</dt><dd>${v}</dd></div>`).join('')}</dl>
+      </div>
+      <div class="perf"></div>
+      <div class="ask">
+        <p class="q">${ex.q}</p>
+        <div class="inrow">
+          <input id="ans" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" aria-label="Ta réponse" placeholder="Ta réponse" value="${esc(S.cur)}" ${S.fb ? 'disabled' : ''}>
+          <span class="unit">${ex.unit}</span>
+        </div>
+        <p id="err" class="err" role="alert"></p>
+        ${S.fb ? '' : `<button class="linkm" data-act="hint" aria-expanded="false">Voir le rappel de formule</button><p id="hint" class="hint" hidden>${ex.hint}</p>`}
+        ${tail}
+      </div>
+    </section>`;
+}
+
+function endView() {
+  const score = S.res.filter((r) => r.ok).length;
+  return `
+    <div class="top"><button class="link" data-act="home">← Accueil</button><span>Bilan</span></div>
+    <h2 class="score">${score} / ${S.list.length}</h2>
+    <p class="sub">${score === S.list.length ? 'Sans faute.' : 'Touche un exercice pour revoir le calcul étape par étape.'}</p>
+    <div class="list">
+      ${S.list.map((ex, k) => {
+        const r = S.res[k];
+        return `
+        <details class="res ${r.ok ? 'ok' : 'ko'}">
+          <summary><span class="mk">${r.ok ? '✓' : '✗'}</span><span class="st">${ex.title}</span><span class="ya">${r.raw === null ? 'Passé' : esc(r.raw)}</span></summary>
+          <div class="det">
+            <p>${ex.q}</p>
+            <p>Réponse attendue : ${expected(ex)}</p>
+            ${steps(ex)}
+          </div>
+        </details>`;
+      }).join('')}
+    </div>
+    <button class="btn primary" data-act="start">Nouvelle série</button>
+    <button class="btn ghost" data-act="home">Retour à l'accueil</button>`;
+}
+
+function render() {
+  app.innerHTML = S.screen === 'home' ? homeView() : S.screen === 'exo' ? exoView() : endView();
+  const a = document.getElementById('ans');
+  if (a && !S.fb) a.focus({ preventScroll: true });
+  window.scrollTo(0, 0);
+}
+
+/* ---------- Actions ---------- */
+function advance() {
+  if (S.i + 1 >= S.list.length) { S.screen = 'end'; }
+  else { S.i++; S.cur = ''; S.fb = false; }
+  render();
+}
+
+function act(a, t) {
+  if (a === 'setcat') { S.cat = t.dataset.v; render(); }
+  else if (a === 'setmode') { S.mode = t.dataset.v; render(); }
+  else if (a === 'start') { newSeries(); render(); }
+  else if (a === 'home') { S.screen = 'home'; render(); }
+  else if (a === 'hint') {
+    const h = document.getElementById('hint');
+    h.hidden = !h.hidden;
+    t.setAttribute('aria-expanded', String(!h.hidden));
+    t.textContent = h.hidden ? 'Voir le rappel de formule' : 'Masquer le rappel';
+  }
+  else if (a === 'check') {
+    if (S.fb) return;
+    const n = parse(S.cur);
+    if (Number.isNaN(n)) { document.getElementById('err').textContent = 'Entre un nombre, par exemple 316 ou 12,5.'; return; }
+    const ex = S.list[S.i];
+    S.res[S.i] = { raw: S.cur.trim(), ok: Math.abs(n - ex.answer) <= ex.tol + 1e-9 };
+    if (S.mode === 'now') { S.fb = true; render(); } else { advance(); }
+  }
+  else if (a === 'skip') {
+    if (S.fb) return;
+    S.res[S.i] = { raw: null, ok: false };
+    if (S.mode === 'now') { S.fb = true; render(); } else { advance(); }
+  }
+  else if (a === 'next') { advance(); }
+}
+
+app.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act]');
+  if (t) act(t.dataset.act, t);
+});
+app.addEventListener('input', (e) => { if (e.target.id === 'ans') S.cur = e.target.value; });
+app.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.id === 'ans') { e.preventDefault(); act('check'); }
+});
+
+render();
+</script>
+</body>
+</html>
